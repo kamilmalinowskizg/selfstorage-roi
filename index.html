@@ -193,14 +193,25 @@
                                     <span class="efficiency-value" id="effMax">—</span>
                                 </div>
                             </div>
+                            <div class="commit-bar">
+                                <button type="button" class="btn btn-secondary" id="commitDimensions">
+                                    <i class="fas fa-check-double"></i> Zatwierdź wymiary i zagospodarowanie
+                                </button>
+                                <span class="commit-hint">Po zatwierdzeniu formularz boksów zostanie wypełniony (tryb auto) lub zaktualizują się limity m² (tryb ręczny).</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="card glass-card boxes-and-options-row">
+                    <div class="card glass-card boxes-and-options-row" id="section-boksy">
                         <div class="card-body">
                             <h3 class="card-subtitle"><i class="fas fa-th"></i> Podział boksów</h3>
-                            <p class="input-hint-inline">Suma procentów musi wynosić <strong>100%</strong>. Możesz też wpisać ilości sztuk w rozmiarach.</p>
-                            <div class="box-categories-row">
+                            <p class="input-hint-inline">Suma procentów musi wynosić <strong>100%</strong>. W trybie auto boksy wypełniają się po kliknięciu „Zatwierdź wymiary i zagospodarowanie”.</p>
+                            <label class="manual-boxes-toggle toggle-label">
+                                <input type="checkbox" id="manualBoxCountsMode" checked>
+                                <span class="toggle-switch"></span>
+                                <span>Wprowadź ilość boksów ręcznie</span>
+                            </label>
+                            <div class="box-categories-row" id="boxCategoriesRow">
                             <div class="box-category small">
                                 <div class="category-header">
                                     <span class="category-badge small">S</span>
@@ -217,7 +228,7 @@
                                     <div class="size-count-row"><label>2 m²</label><input type="number" id="cnt_small_2" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>2,5 m²</label><input type="number" id="cnt_small_2.5" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>3 m²</label><input type="number" id="cnt_small_3" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
-                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumSmall">0 szt, 0 m²</strong></div>
+                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumSmall">0 szt, 0 m²</strong> <span class="max-m2-hint" id="maxSmallHint"></span></div>
                                 </div>
                             </div>
                             <div class="box-category medium">
@@ -235,7 +246,7 @@
                                     <div class="size-count-row"><label>5 m²</label><input type="number" id="cnt_medium_5" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>6 m²</label><input type="number" id="cnt_medium_6" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>7 m²</label><input type="number" id="cnt_medium_7" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
-                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumMedium">0 szt, 0 m²</strong></div>
+                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumMedium">0 szt, 0 m²</strong> <span class="max-m2-hint" id="maxMediumHint"></span></div>
                                 </div>
                             </div>
                             <div class="box-category large">
@@ -253,7 +264,7 @@
                                     <div class="size-count-row"><label>10 m²</label><input type="number" id="cnt_large_10" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>12 m²</label><input type="number" id="cnt_large_12" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
                                     <div class="size-count-row"><label>15 m²</label><input type="number" id="cnt_large_15" min="0" value="0" class="size-count-input"><span class="unit">szt</span></div>
-                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumLarge">0 szt, 0 m²</strong></div>
+                                    <div class="size-count-sum"><span>Razem:</span> <strong id="sumLarge">0 szt, 0 m²</strong> <span class="max-m2-hint" id="maxLargeHint"></span></div>
                                 </div>
                             </div>
                             </div>

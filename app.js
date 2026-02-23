@@ -12,6 +12,7 @@ const state = {
     armBWidth: 10,
     totalArea: 600,
     manualAreaMode: false,  // gdy true: tylko pow. brutto z manualGrossAreaInput
+    manualBoxCountsMode: true,  // domyślnie: pola 0, edytowalne; po wyłączeniu → auto z metrażu budynku
     systemHeight: 2500,  // 2,5 m – według planu (szara: mb × 2,5; biała: mb × 2,5 − drzwi)
     doorHeight: 2130,
     corridorWidth: 1400,
@@ -105,6 +106,9 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeSliders();
     initializeEventListeners();
     updateGrossArea();
+    document.querySelectorAll('#boxCategoriesRow .size-count-input').forEach(inp => {
+        if (inp) inp.readOnly = !state.manualBoxCountsMode;
+    });
 });
 
 // ===== TAB NAVIGATION (no-op when landing: no nav-tab in DOM) =====
@@ -188,6 +192,28 @@ function initializeInputs() {
             state.grossArea = parseFloat(e.target.value) || 0;
             const gEl = document.getElementById('grossArea');
             if (gEl) gEl.textContent = state.grossArea;
+            ['small', 'medium', 'large'].forEach(c => updateSizeCountSum(c));
+        });
+    }
+
+    // Przycisk zatwierdzenia – commit wymiarów i zagospodarowania, scroll do kalkulatora boksów
+    document.getElementById('commitDimensions')?.addEventListener('click', () => {
+        updateGrossArea();
+        autoFillBoxCounts();
+        const boksySection = document.getElementById('section-boksy');
+        if (boksySection) boksySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    // Ręczna ilość boksów – domyślnie włączona (pola 0, edytowalne); wyłączenie → auto z metrażu
+    const manualBoxCheck = document.getElementById('manualBoxCountsMode');
+    const boxCategoriesRow = document.getElementById('boxCategoriesRow');
+    if (manualBoxCheck) {
+        manualBoxCheck.addEventListener('change', (e) => {
+            state.manualBoxCountsMode = e.target.checked;
+            if (!state.manualBoxCountsMode) autoFillBoxCounts();
+            boxCategoriesRow?.querySelectorAll('.size-count-input').forEach(inp => {
+                inp.readOnly = !state.manualBoxCountsMode;
+            });
         });
     }
 
@@ -224,6 +250,7 @@ function initializeInputs() {
             const val = parseInt(e.target.value);
             state.targetEfficiency = val;
             if (targetEffNumber) targetEffNumber.value = val;
+            ['small', 'medium', 'large'].forEach(c => updateSizeCountSum(c));
         });
     }
     if (targetEffNumber) {
@@ -233,6 +260,7 @@ function initializeInputs() {
             state.targetEfficiency = val;
             e.target.value = val;
             if (targetEffSlider) targetEffSlider.value = val;
+            ['small', 'medium', 'large'].forEach(c => updateSizeCountSum(c));
         });
     }
 
@@ -302,6 +330,55 @@ const BOX_SIZE_OPTIONS = {
     large: [8, 10, 12, 15]
 };
 
+const BOX_DEFAULT_WEIGHTS = {
+    large: { 8: 0.5, 10: 0.3, 12: 0.15, 15: 0.05 },
+    medium: { 4: 0.4, 5: 0.3, 6: 0.2, 7: 0.1 },
+    small: { 1: 0.15, 1.5: 0.2, 2: 0.35, 2.5: 0.2, 3: 0.1 }
+};
+
+function getMaxM2PerCategory() {
+    const targetEff = (state.targetEfficiency || 70) / 100;
+    const usableArea = state.grossArea * targetEff;
+    const total = state.smallPercent + state.mediumPercent + state.largePercent;
+    const norm = Math.max(total, 1) / 100;
+    return {
+        small: usableArea * (state.smallPercent / 100 / norm),
+        medium: usableArea * (state.mediumPercent / 100 / norm),
+        large: usableArea * (state.largePercent / 100 / norm)
+    };
+}
+
+function autoFillBoxCounts() {
+    ['small', 'medium', 'large'].forEach(c => updateSizeCountSum(c)); // zawsze odśwież max m²
+    if (state.manualBoxCountsMode) return;
+    const max = getMaxM2PerCategory();
+    ['small', 'medium', 'large'].forEach(cat => {
+        const targetM2 = max[cat];
+        const sizes = BOX_SIZE_OPTIONS[cat];
+        const weights = BOX_DEFAULT_WEIGHTS[cat];
+        const counts = {};
+        sizes.forEach(sz => { counts[sz] = 0; });
+        Object.entries(weights).forEach(([szStr, w]) => {
+            const sz = parseFloat(szStr);
+            const target = targetM2 * w;
+            let area = 0;
+            while (area + sz <= target + 0.01) {
+                counts[sz] = (counts[sz] || 0) + 1;
+                area += sz;
+            }
+        });
+        const stateKey = cat + 'Counts';
+        Object.keys(state[stateKey]).forEach(k => {
+            state[stateKey][k] = counts[parseFloat(k)] || 0;
+        });
+        sizes.forEach(sz => {
+            const el = document.getElementById('cnt_' + cat + '_' + sz);
+            if (el) el.value = state[stateKey][sz] || 0;
+        });
+        updateSizeCountSum(cat);
+    });
+}
+
 // ===== SLIDER INITIALIZATION =====
 function initializeSliders() {
     const sliders = ['small', 'medium', 'large'];
@@ -315,6 +392,7 @@ function initializeSliders() {
                 state[`${cat}Percent`] = val;
                 if (valueEl) valueEl.textContent = val + '%';
                 updateProgressBar();
+                autoFillBoxCounts();
             });
         }
         
@@ -346,8 +424,19 @@ function updateSizeCountSum(category) {
         count += n;
         area += n * sz;
     });
-    const sumEl = document.getElementById('sum' + category.charAt(0).toUpperCase() + category.slice(1));
-    if (sumEl) sumEl.textContent = count + ' szt, ' + area + ' m²';
+    const cap = category.charAt(0).toUpperCase() + category.slice(1);
+    const sumEl = document.getElementById('sum' + cap);
+    const hintEl = document.getElementById('max' + cap + 'Hint');
+    const container = document.querySelector('.box-category.' + category + ' .size-counts');
+    const max = getMaxM2PerCategory();
+    const maxM2 = max[category];
+    const exceeded = area > maxM2 + 0.01;
+    if (sumEl) sumEl.textContent = count + ' szt, ' + area.toFixed(1) + ' m²';
+    if (hintEl) {
+        hintEl.textContent = maxM2 > 0 ? '(max ' + maxM2.toFixed(0) + ' m²)' : '';
+        hintEl.classList.toggle('exceeded', exceeded);
+    }
+    if (container) container.classList.toggle('exceeded', exceeded);
 }
 
 function updateProgressBar() {
@@ -1488,6 +1577,7 @@ function updateGrossArea() {
     state.grossArea = Math.round(area);
     const gEl = document.getElementById('grossArea');
     if (gEl) gEl.textContent = state.grossArea;
+    ['small', 'medium', 'large'].forEach(c => updateSizeCountSum(c));
 }
 
 function resetPrices() {
@@ -1545,6 +1635,24 @@ function generatePlan() {
     if (total !== 100) {
         alert(`Suma procentów musi wynosić dokładnie 100%!\nObecnie: ${total}%\n\nDostosuj suwaki podziału boksów.`);
         return;
+    }
+    // Walidacja metrażu w trybie ręcznym
+    if (state.manualBoxCountsMode) {
+        const max = getMaxM2PerCategory();
+        const cats = [
+            { key: 'small', name: 'Małe', counts: state.smallCounts, sizes: BOX_SIZE_OPTIONS.small },
+            { key: 'medium', name: 'Średnie', counts: state.mediumCounts, sizes: BOX_SIZE_OPTIONS.medium },
+            { key: 'large', name: 'Duże', counts: state.largeCounts, sizes: BOX_SIZE_OPTIONS.large }
+        ];
+        for (const c of cats) {
+            let area = 0;
+            c.sizes.forEach(sz => { area += (c.counts[sz] || 0) * sz; });
+            const maxM2 = max[c.key];
+            if (area > maxM2 + 0.01) {
+                alert(`Kategoria "${c.name}" przekracza dostępny metraż.\nObecnie: ${area.toFixed(1)} m²\nMaks. dla tej kategorii: ${maxM2.toFixed(0)} m²\n\nDostosuj ilości lub wyłącz tryb ręczny.`);
+                return;
+            }
+        }
     }
     
     const normalizedSmall = state.smallPercent / 100;

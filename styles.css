@@ -793,6 +793,51 @@ body {
     color: var(--primary);
 }
 
+.max-m2-hint {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    font-weight: normal;
+}
+
+.max-m2-hint.exceeded {
+    color: #dc3545;
+}
+
+.size-counts.exceeded .size-count-sum strong {
+    color: #dc3545;
+}
+
+.manual-boxes-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.manual-boxes-toggle .toggle-switch {
+    flex-shrink: 0;
+}
+
+.commit-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+    padding: 16px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    border: 1px solid var(--gray-200);
+}
+
+.commit-bar .btn {
+    align-self: flex-start;
+}
+
+.commit-hint {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+}
+
 .total-bar {
     display: flex;
     align-items: center;
